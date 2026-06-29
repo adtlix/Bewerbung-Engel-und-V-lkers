@@ -38,6 +38,10 @@ jobs:
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          # Aktiviert GitHub Pages im Repo automatisch (Build-Quelle: GitHub Actions),
+          # falls noch nicht geschehen. Benötigt die pages:write-Berechtigung (oben gesetzt).
+          enablement: true
 
       - name: Build static export
         env:
