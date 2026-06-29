@@ -1,0 +1,66 @@
+name: Deploy to GitHub Pages
+
+on:
+  # Bei jedem Push auf den Feature-Branch neu bauen & deployen
+  push:
+    branches:
+      - claude/cinematic-3d-scrollytelling-j0k2ej
+  # Manuell auslösbar im Actions-Tab
+  workflow_dispatch:
+
+# Rechte, die der GITHUB_TOKEN für das Pages-Deployment benötigt
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nur ein gleichzeitiges Deployment; laufende Deploys nicht abbrechen
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static export
+        env:
+          BUILD_TARGET: pages
+          # Exakter Repo-Name → korrekter basePath (Pages-Assets sind case-sensitive)
+          PAGES_BASE_PATH: ${{ github.event.repository.name }}
+        run: npm run build
+
+      - name: Disable Jekyll (serve _next/ folder)
+        run: touch out/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
